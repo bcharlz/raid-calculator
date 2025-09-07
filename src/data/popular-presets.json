@@ -1,0 +1,42 @@
+{
+  "version": "1.0",
+  "entity": "popularRaidPresets",
+  "presets": [
+    {
+      "id": "syn-raid5-8x12tb-hdd",
+      "label": "Synology · RAID 5 · 8×12TB (HDD)",
+      "params": { "vendor": "synology", "level": "5", "drives": 8, "sizeTB": 12, "media": "hdd" }
+    },
+    {
+      "id": "qnap-raid6-8x18tb-hdd",
+      "label": "QNAP · RAID 6 · 8×18TB (HDD)",
+      "params": { "vendor": "qnap", "level": "6", "drives": 8, "sizeTB": 18, "media": "hdd" }
+    },
+    {
+      "id": "zfs-raid10-8x16tb-ssd",
+      "label": "ZFS · RAID 10 · 8×16TB (SSD)",
+      "params": { "vendor": "zfs", "level": "10", "drives": 8, "sizeTB": 16, "media": "ssd" }
+    },
+    {
+      "id": "syn-raid6-12x20tb-hdd",
+      "label": "Synology · RAID 6 · 12×20TB (HDD)",
+      "params": { "vendor": "synology", "level": "6", "drives": 12, "sizeTB": 20, "media": "hdd" }
+    },
+    {
+      "id": "qnap-raid5-6x14tb-hdd",
+      "label": "QNAP · RAID 5 · 6×14TB (HDD)",
+      "params": { "vendor": "qnap", "level": "5", "drives": 6, "sizeTB": 14, "media": "hdd" }
+    },
+    {
+      "id": "zfs-raidz2-10x18tb-hdd",
+      "label": "ZFS · RAIDZ2 · 10×18TB (HDD)",
+      "params": { "vendor": "zfs", "level": "6", "drives": 10, "sizeTB": 18, "media": "hdd" }
+    }
+  ],
+  "ui": {
+    "sectionTitle": "Popular Configurations",
+    "sectionDescription": "Jump straight into real-world NAS setups. Click a preset to auto-fill the calculator and get a shareable link.",
+    "anchorTarget": "calc"
+  }
+}
+

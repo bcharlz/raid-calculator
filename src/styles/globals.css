@@ -1,0 +1,335 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Import Inter font */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 84% 4.9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 84% 4.9%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 94.1%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-gradient-diagonal font-sans text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    min-height: 100vh;
+    background-attachment: fixed;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400;
+  }
+
+  /* Focus styles */
+  :focus-visible {
+    @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-background;
+  }
+}
+
+@layer components {
+  /* Glassmorphism components */
+  .glass {
+    @apply backdrop-blur-md bg-glass-white border border-glass-border;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  }
+
+  .glass-card {
+    @apply glass rounded-xl p-6;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  }
+
+  .glass-button {
+    @apply glass rounded-lg px-4 py-2 transition-all duration-200 hover:bg-white/10 active:scale-95;
+  }
+
+  /* Typography */
+  .heading-1 {
+    @apply font-display font-bold text-fluid-5xl leading-tight tracking-tight;
+  }
+
+  .heading-2 {
+    @apply font-display font-bold text-fluid-4xl leading-tight tracking-tight;
+  }
+
+  .heading-3 {
+    @apply font-display font-semibold text-fluid-3xl leading-tight;
+  }
+
+  .heading-4 {
+    @apply font-display font-semibold text-fluid-2xl leading-tight;
+  }
+
+  .body-large {
+    @apply text-fluid-lg leading-relaxed;
+  }
+
+  .body-base {
+    @apply text-fluid-base leading-relaxed;
+  }
+
+  .body-small {
+    @apply text-fluid-sm leading-relaxed;
+  }
+
+  /* Layout components */
+  .container-custom {
+    @apply mx-auto max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+
+  .section-padding {
+    @apply py-16 sm:py-20 lg:py-24;
+  }
+
+  /* Animation utilities */
+  .animate-on-scroll {
+    @apply opacity-0 translate-y-4 transition-all duration-700 ease-out;
+  }
+
+  .animate-on-scroll.in-view {
+    @apply opacity-100 translate-y-0;
+  }
+
+  /* Custom button styles */
+  .btn-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90 focus:ring-primary;
+    @apply px-6 py-3 rounded-lg font-medium transition-all duration-200;
+    @apply shadow-lg hover:shadow-xl active:scale-95;
+  }
+
+  .btn-secondary {
+    @apply glass-button text-foreground hover:text-primary;
+    @apply font-medium;
+  }
+
+  .btn-ghost {
+    @apply bg-transparent hover:bg-white/5 text-foreground;
+    @apply px-4 py-2 rounded-lg font-medium transition-all duration-200;
+  }
+
+  /* Form components */
+  .form-input {
+    @apply glass rounded-lg px-4 py-3 text-foreground placeholder:text-muted-foreground;
+    @apply border-0 focus:ring-2 focus:ring-primary focus:ring-offset-0;
+    @apply transition-all duration-200;
+  }
+
+  .form-select {
+    @apply form-input appearance-none bg-no-repeat bg-right bg-[length:16px_16px];
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+    padding-right: 2.5rem;
+  }
+
+  /* Card components */
+  .result-card {
+    @apply glass-card hover:bg-white/10 transition-all duration-300;
+    @apply border-l-4 border-l-primary;
+  }
+
+  .metric-card {
+    @apply glass-card text-center hover:scale-105 transition-all duration-200;
+  }
+
+  /* Utility classes */
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent;
+  }
+
+  .border-gradient {
+    position: relative;
+  }
+
+  .border-gradient::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.05));
+    border-radius: inherit;
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: xor;
+  }
+
+  /* Loading states */
+  .skeleton {
+    @apply animate-pulse bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 bg-[length:200%_100%];
+    animation: skeleton-loading 1.5s ease-in-out infinite;
+  }
+
+  @keyframes skeleton-loading {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+
+  /* Responsive utilities */
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@layer utilities {
+  /* Custom spacing */
+  .space-y-section > * + * {
+    @apply mt-16 sm:mt-20 lg:mt-24;
+  }
+
+  /* Text utilities */
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Interactive states */
+  .interactive {
+    @apply transition-all duration-200 hover:scale-105 active:scale-95;
+  }
+
+  .interactive-subtle {
+    @apply transition-all duration-200 hover:bg-white/5;
+  }
+
+  /* Glass morphism variants */
+  .glass-subtle {
+    @apply backdrop-blur-sm bg-white/5 border border-white/10;
+  }
+
+  .glass-strong {
+    @apply backdrop-blur-xl bg-white/10 border border-white/20;
+  }
+}
+
+
+/* Google AdSense Styles */
+.adsense-container {
+  @apply flex flex-col items-center justify-center;
+}
+
+.ad-placeholder {
+  @apply flex flex-col items-center justify-center;
+}
+
+.ad-banner-section {
+  @apply flex flex-col items-center justify-center;
+}
+
+.ad-sidebar {
+  @apply hidden xl:block;
+}
+
+/* Responsive ad adjustments */
+@media (max-width: 1279px) {
+  .ad-sidebar {
+    @apply hidden;
+  }
+}
+
+/* AdSense responsive behavior */
+.adsbygoogle {
+  @apply block;
+}
+
+/* Ad placeholder animations */
+.ad-placeholder:hover {
+  @apply transform scale-105 transition-transform duration-200;
+}
+
+/* Ensure ads don't interfere with main content */
+.ad-container {
+  @apply relative z-10;
+}
+
+/* Mobile ad adjustments */
+@media (max-width: 768px) {
+  .ad-banner-section {
+    @apply px-4;
+  }
+  
+  .ad-placeholder {
+    @apply max-w-full overflow-hidden;
+  }
+}
+
