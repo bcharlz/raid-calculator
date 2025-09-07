@@ -24,10 +24,10 @@ export default function Footer() {
       { label: 'FAQ', href: '#faq' },
     ],
     resources: [
-      { label: 'RAID Levels Guide', href: '/guide/raid-levels' },
-      { label: 'Performance Tips', href: '/guide/performance' },
-      { label: 'Best Practices', href: '/guide/best-practices' },
-      { label: 'Troubleshooting', href: '/guide/troubleshooting' },
+      { label: 'RAID Levels Guide', href: '/raid-levels-guide' },
+      { label: 'Performance Tips', href: '/performance-tips' },
+      { label: 'Best Practices', href: '/best-practices' },
+      { label: 'Troubleshooting', href: '/troubleshooting' },
     ],
     vendors: [
       { label: 'Synology', href: 'https://synology.com', external: true },
@@ -82,7 +82,7 @@ export default function Footer() {
                 on 2 different media types, with 1 copy stored off-site.
               </p>
               <Link 
-                href="/guide/backup-strategy" 
+                href="/best-practices" 
                 className="inline-flex items-center mt-3 text-primary hover:text-primary/80 font-medium transition-colors duration-200"
               >
                 Learn about backup strategies
