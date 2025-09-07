@@ -1,0 +1,19 @@
+﻿# Dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# Env and local
+.env
+.env.*
+
+# Logs and editor junk
+*.log
+.DS_Store
+.vscode/
+.idea/
+
+# Backups from earlier
+src/_backup/
