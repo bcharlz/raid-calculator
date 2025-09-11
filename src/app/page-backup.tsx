@@ -23,6 +23,11 @@ import {
   validateCalculatorForm 
 } from '@/models/raid-schemas';
 
+// Import types
+import type { 
+  CalculationResults
+} from '@/features/raid/types';
+
 export default function HomePage() {
   // Form state
   const [form, setForm] = useState<CalculatorFormType>({
@@ -37,11 +42,7 @@ export default function HomePage() {
   });
 
   // Results state
-  const [results, setResults] = useState<{
-    raid: RaidResults;
-    iops: IopsEstimate;
-  } | null>(null);
-
+  const [results, setResults] = useState<CalculationResults | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
   const [showResults, setShowResults] = useState(false);
 
@@ -70,7 +71,6 @@ export default function HomePage() {
             mixedDisks: config.disks,
           });
         }
-        // Auto-calculate if URL has parameters
         setTimeout(() => handleCalculate(), 100);
       } catch (error) {
         console.error('Failed to load configuration from URL:', error);
@@ -81,7 +81,7 @@ export default function HomePage() {
   // Update URL when form changes
   useEffect(() => {
     if (results) {
-      const config = form.useMixedDisks && form.mixedDisks?.length
+      const urlConfig = form.useMixedDisks && form.mixedDisks?.length
         ? {
             raidLevel: form.raidLevel,
             configuration: { disks: form.mixedDisks },
@@ -95,7 +95,7 @@ export default function HomePage() {
             },
           };
       
-      updateUrl(config, true);
+      updateUrl(urlConfig);
     }
   }, [form, results]);
 
@@ -103,36 +103,31 @@ export default function HomePage() {
     try {
       setIsCalculating(true);
       
-      // Validate form
-      const validatedForm = validateCalculatorForm(form);
+      const validation = validateCalculatorForm(form);
       
-      // Prepare configuration
-      const raidConfig = validatedForm.useMixedDisks && validatedForm.mixedDisks?.length
+      const raidConfig = form.useMixedDisks && form.mixedDisks?.length
         ? {
-            raidLevel: validatedForm.raidLevel,
-            disks: validatedForm.mixedDisks,
+            raidLevel: form.raidLevel,
+            disks: form.mixedDisks,
           }
         : {
-            raidLevel: validatedForm.raidLevel,
-            uniformSize: validatedForm.diskSize,
-            diskCount: validatedForm.diskCount,
+            raidLevel: form.raidLevel,
+            uniformSize: form.diskSize,
+            diskCount: form.diskCount,
             disks: [],
           };
 
-      // Calculate RAID results
       const raidResults = calculateRaid(raidConfig);
       
-      // Estimate IOPS
       const iopsResults = estimateIops(
-        validatedForm.raidLevel,
-        validatedForm.diskCount,
-        validatedForm.mediaType,
-        undefined, // dataDisks - let it calculate automatically
-        validatedForm.customRandomReadIops,
-        validatedForm.customSequentialReadMBps
+        form.raidLevel,
+        form.diskCount,
+        form.mediaType,
+        undefined,
+        form.customRandomReadIops,
+        form.customSequentialReadMBps
       );
 
-      // Simulate calculation delay for better UX
       await new Promise(resolve => setTimeout(resolve, 800));
 
       setResults({
@@ -142,7 +137,6 @@ export default function HomePage() {
       
       setShowResults(true);
       
-      // Scroll to results
       setTimeout(() => {
         document.getElementById('results')?.scrollIntoView({ 
           behavior: 'smooth',
@@ -152,52 +146,41 @@ export default function HomePage() {
       
     } catch (error) {
       console.error('Calculation failed:', error);
-      // TODO: Show error toast
     } finally {
       setIsCalculating(false);
     }
   }, [form]);
 
-  // Handle preset selection with automatic calculation and scroll
   const handlePresetSelect = useCallback(async (presetForm: CalculatorFormType) => {
-    // Set the form with preset values
     setForm(presetForm);
     
-    // Wait a moment for form to update, then calculate
     setTimeout(async () => {
       try {
         setIsCalculating(true);
         
-        // Validate form
-        const validatedForm = validateCalculatorForm(presetForm);
-        
-        // Prepare configuration
-        const raidConfig = validatedForm.useMixedDisks && validatedForm.mixedDisks?.length
+        const raidConfig = presetForm.useMixedDisks && presetForm.mixedDisks?.length
           ? {
-              raidLevel: validatedForm.raidLevel,
-              disks: validatedForm.mixedDisks,
+              raidLevel: presetForm.raidLevel,
+              disks: presetForm.mixedDisks,
             }
           : {
-              raidLevel: validatedForm.raidLevel,
-              uniformSize: validatedForm.diskSize,
-              diskCount: validatedForm.diskCount,
+              raidLevel: presetForm.raidLevel,
+              uniformSize: presetForm.diskSize,
+              diskCount: presetForm.diskCount,
               disks: [],
             };
 
-        // Calculate RAID results
         const raidResults = calculateRaid(raidConfig);
         
-        // Estimate IOPS
         const iopsResults = estimateIops(
-          validatedForm.raidLevel,
-          validatedForm.diskCount,
-          validatedForm.mediaType,
-          undefined, // dataDisks - let it calculate automatically
-          validatedForm.customRandomReadIops,
-          validatedForm.customSequentialReadMBps
+          presetForm.raidLevel,
+          presetForm.diskCount,
+          presetForm.mediaType,
+          undefined,
+          presetForm.customRandomReadIops,
+          presetForm.customSequentialReadMBps
         );
 
-        // Simulate calculation delay for better UX
         await new Promise(resolve => setTimeout(resolve, 800));
 
         setResults({
@@ -207,7 +190,6 @@ export default function HomePage() {
         
         setShowResults(true);
         
-        // Scroll to results
         setTimeout(() => {
           document.getElementById('results')?.scrollIntoView({ 
             behavior: 'smooth',
@@ -223,7 +205,7 @@ export default function HomePage() {
     }, 100);
   }, []);
 
-  const handleShare = useCallback(() => {
+  const handleShare = useCallback((): void => {
     const config = form.useMixedDisks && form.mixedDisks?.length
       ? {
           raidLevel: form.raidLevel,
@@ -248,9 +230,21 @@ export default function HomePage() {
       });
     } else {
       navigator.clipboard.writeText(shareUrl);
-      // TODO: Show success toast
     }
   }, [form]);
+
+  const handleExport = useCallback((): void => {
+    window.print();
+  }, []);
+
+  // Convert IOPS for display
+  const convertIopsForDisplay = (iops: any) => ({
+    randomRead: iops.randomReadIops,
+    randomWrite: iops.randomWriteIops,
+    sequentialRead: iops.sequentialReadMBps,
+    sequentialWrite: iops.sequentialWriteMBps,
+    notes: []
+  });
 
   return (
     <div className="min-h-screen">
@@ -295,10 +289,9 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Main Content with Sidebar Layout */}
+      {/* Main Content */}
       <div className="container-custom">
         <div className="flex flex-col xl:flex-row gap-8">
-          {/* Main Content */}
           <div className="flex-1 min-w-0">
             {/* Calculator Section */}
             <section id="calc" className="section-padding">
@@ -310,7 +303,6 @@ export default function HomePage() {
               />
             </section>
 
-            {/* Ad Banner between Calculator and Results */}
             <AdBanner title="Sponsored" className="border-t border-white/10" />
 
             {/* Results Section */}
@@ -318,24 +310,19 @@ export default function HomePage() {
               <section id="results" className="section-padding">
                 <div>
                   <ResultsDisplay
-                    results={results.raid}
-                    iopsEstimate={results.iops}
-                    onShare={handleShare}
-                    onExport={handleExport}
+                    raidResults={results.raid}
+                    iopsEstimate={convertIopsForDisplay(results.iops)}
                     hasCustomRandomReadIops={!!form.customRandomReadIops}
                     hasCustomSequentialReadMBps={!!form.customSequentialReadMBps}
+                    isVisible={showResults}
                   />
                 </div>
               </section>
             )}
 
-            {/* Vendor Presets Section */}
             <VendorPresets onPresetSelect={handlePresetSelect} />
-
-            {/* Ad Banner between sections */}
             <AdBanner className="border-t border-white/10" />
 
-            {/* Vendor Shortcuts Section */}
             <section className="section-padding">
               <div className="container-custom">
                 <VendorShortcuts />
@@ -343,22 +330,13 @@ export default function HomePage() {
             </section>
           </div>
 
-          {/* Ad Sidebar */}
           <AdSidebar className="xl:w-80 flex-shrink-0" />
         </div>
       </div>
-          <CalculatorFormComponent
-            value={form}
-            onChange={setForm}
-            onCalculate={handleCalculate}
-            isCalculating={isCalculating}
-          />
-        </div>
-      </section>
 
-      {/* Results Section */}
+      {/* Additional Results Section */}
       {showResults && results && (
-        <section id="results" className="section-padding">
+        <section className="section-padding">
           <div className="container-custom">
             <motion.div
               className="text-center mb-12"
@@ -382,7 +360,7 @@ export default function HomePage() {
                   <span>Share Configuration</span>
                 </button>
                 <button
-                  onClick={() => window.print()}
+                  onClick={handleExport}
                   className="btn-ghost flex items-center space-x-2"
                 >
                   <Download className="w-4 h-4" />
@@ -390,27 +368,9 @@ export default function HomePage() {
                 </button>
               </div>
             </motion.div>
-
-            <ResultsDisplay
-              raidResults={results.raid}
-              iopsEstimate={results.iops}
-              isVisible={showResults}
-              hasCustomRandomReadIops={!!form.customRandomReadIops}
-              hasCustomSequentialReadMBps={!!form.customSequentialReadMBps}
-            />
           </div>
         </section>
       )}
-
-      {/* Vendor Presets Section */}
-      <VendorPresets onPresetSelect={handlePresetSelect} />
-
-      {/* Vendor Shortcuts Section */}
-      <section className="section-padding">
-        <div className="container-custom">
-          <VendorShortcuts />
-        </div>
-      </section>
 
       {/* How It Works Section */}
       <section id="how" className="section-padding">
@@ -533,4 +493,3 @@ export default function HomePage() {
     </div>
   );
 }
-

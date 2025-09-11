@@ -1,254 +1,239 @@
-/**
- * Core RAID calculation service
- * Handles capacity, efficiency, fault tolerance calculations for RAID 0/1/5/6/10
- */
+// src/services/raidCalc.ts - FIXED for downlevel iteration
+import type { RaidResults } from '../features/raid/types';
 
+export type MediaType = 'HDD' | 'SSD' | 'NVME';
 export type RaidLevel = '0' | '1' | '5' | '6' | '10';
-export type MediaType = 'HDD' | 'SSD';
 
 export interface RaidDisk {
-  size: number; // Size in TB
+  size: number;
   mediaType: MediaType;
+  model?: string;
+  rpm?: number;
 }
 
 export interface RaidConfiguration {
-  disks: RaidDisk[];
   raidLevel: RaidLevel;
-  uniformSize?: number; // For uniform disk setups
-  diskCount?: number; // For uniform disk setups
+  disks: RaidDisk[];
+  uniformSize?: number;
+  diskCount?: number;
 }
 
-export interface RaidResults {
-  usableCapacity: number; // TB
-  totalCapacity: number; // TB
-  efficiency: number; // Percentage (0-100)
-  faultTolerance: number; // Number of disks that can fail
-  parityOverhead: number; // TB
-  stripeSize: number; // Number of data disks
-  description: string;
-  warnings: string[];
-}
-
-/**
- * Calculate RAID configuration results
- */
 export function calculateRaid(config: RaidConfiguration): RaidResults {
-  const { raidLevel } = config;
+  const { raidLevel, disks, uniformSize, diskCount } = config;
   
-  // Determine disk configuration
-  const disks = config.disks.length > 0 
-    ? config.disks 
-    : Array(config.diskCount || 0).fill({ 
-        size: config.uniformSize || 0, 
-        mediaType: 'HDD' as MediaType 
-      });
-
-  if (disks.length === 0) {
-    throw new Error('No disks specified');
+  // Handle uniform vs mixed disk configurations
+  let actualDisks: RaidDisk[];
+  if (disks.length === 0 && uniformSize && diskCount) {
+    // Create uniform disks
+    actualDisks = Array(diskCount).fill(null).map(() => ({
+      size: uniformSize,
+      mediaType: 'HDD' as MediaType
+    }));
+  } else {
+    actualDisks = disks;
   }
 
-  const totalCapacity = disks.reduce((sum, disk) => sum + disk.size, 0);
-  const diskCount = disks.length;
+  if (actualDisks.length === 0) {
+    throw new Error('No disks configured');
+  }
+
+  // Get unique sizes - FIXED for downlevel iteration
+  const sizes: number[] = [];
+  actualDisks.forEach(disk => {
+    if (!sizes.includes(disk.size)) {
+      sizes.push(disk.size);
+    }
+  });
+  const uniqueSizes = sizes;
+
+  // Use smallest disk size for calculations (common RAID behavior)
+  const smallestSize = Math.min(...actualDisks.map(d => d.size));
+  const totalRawCapacity = actualDisks.length * smallestSize;
+
+  let usableCapacity: number;
+  let efficiency: number;
+  let faultTolerance: number;
+  let parityOverhead: number;
+  let description: string;
   const warnings: string[] = [];
-
-  // Validate minimum disk requirements
-  validateMinimumDisks(raidLevel, diskCount);
-
-  // Check for mixed disk sizes
-  const uniqueSizes = [...new Set(disks.map(d => d.size))];
-  if (uniqueSizes.length > 1) {
-    warnings.push('Mixed disk sizes detected. Calculations based on smallest disk size.');
-  }
-
-  // Use smallest disk size for calculations (RAID limitation)
-  const effectiveDiskSize = Math.min(...disks.map(d => d.size));
-  const effectiveTotalCapacity = effectiveDiskSize * diskCount;
-
-  let results: RaidResults;
 
   switch (raidLevel) {
     case '0':
-      results = calculateRaid0(diskCount, effectiveDiskSize, effectiveTotalCapacity);
+      usableCapacity = totalRawCapacity;
+      efficiency = 1.0;
+      faultTolerance = 0;
+      parityOverhead = 0;
+      description = `RAID 0 with ${actualDisks.length} disks provides maximum performance but no fault tolerance`;
+      if (actualDisks.length < 2) {
+        warnings.push('RAID 0 requires at least 2 disks');
+      }
+      warnings.push('RAID 0 provides no data protection - any disk failure results in total data loss');
       break;
+
     case '1':
-      results = calculateRaid1(diskCount, effectiveDiskSize, effectiveTotalCapacity);
+      usableCapacity = totalRawCapacity / 2;
+      efficiency = 0.5;
+      faultTolerance = Math.floor(actualDisks.length / 2);
+      parityOverhead = totalRawCapacity / 2;
+      description = `RAID 1 with ${actualDisks.length} disks provides excellent fault tolerance with 50% capacity efficiency`;
+      if (actualDisks.length < 2) {
+        warnings.push('RAID 1 requires at least 2 disks');
+      }
+      if (actualDisks.length % 2 !== 0) {
+        warnings.push('RAID 1 works best with an even number of disks');
+      }
       break;
+
     case '5':
-      results = calculateRaid5(diskCount, effectiveDiskSize, effectiveTotalCapacity);
+      usableCapacity = (actualDisks.length - 1) * smallestSize;
+      efficiency = (actualDisks.length - 1) / actualDisks.length;
+      faultTolerance = 1;
+      parityOverhead = smallestSize;
+      description = `RAID 5 with ${actualDisks.length} disks provides good balance of capacity, performance, and protection`;
+      if (actualDisks.length < 3) {
+        warnings.push('RAID 5 requires at least 3 disks');
+      }
+      if (actualDisks.length > 8) {
+        warnings.push('RAID 5 with many disks increases rebuild risk and time');
+      }
       break;
+
     case '6':
-      results = calculateRaid6(diskCount, effectiveDiskSize, effectiveTotalCapacity);
+      usableCapacity = (actualDisks.length - 2) * smallestSize;
+      efficiency = (actualDisks.length - 2) / actualDisks.length;
+      faultTolerance = 2;
+      parityOverhead = 2 * smallestSize;
+      description = `RAID 6 with ${actualDisks.length} disks provides enhanced protection with dual parity`;
+      if (actualDisks.length < 4) {
+        warnings.push('RAID 6 requires at least 4 disks');
+      }
       break;
+
     case '10':
-      results = calculateRaid10(diskCount, effectiveDiskSize, effectiveTotalCapacity);
+      usableCapacity = totalRawCapacity / 2;
+      efficiency = 0.5;
+      faultTolerance = actualDisks.length / 2;
+      parityOverhead = totalRawCapacity / 2;
+      description = `RAID 10 with ${actualDisks.length} disks combines mirroring and striping for high performance and reliability`;
+      if (actualDisks.length < 4) {
+        warnings.push('RAID 10 requires at least 4 disks');
+      }
+      if (actualDisks.length % 2 !== 0) {
+        warnings.push('RAID 10 requires an even number of disks');
+      }
       break;
+
     default:
       throw new Error(`Unsupported RAID level: ${raidLevel}`);
   }
 
-  results.warnings = warnings;
-  results.totalCapacity = totalCapacity;
+  // Add mixed disk size warnings
+  if (uniqueSizes.length > 1) {
+    const maxSize = Math.max(...uniqueSizes);
+    const minSize = Math.min(...uniqueSizes);
+    if (maxSize > minSize * 1.5) {
+      warnings.push('Mixed disk sizes detected - capacity limited by smallest disk');
+    }
+  }
 
-  return results;
-}
+  // Calculate stripe size (simplified)
+  const stripeSize = raidLevel === '0' || raidLevel === '5' || raidLevel === '6' 
+    ? 64 // KB, typical default
+    : raidLevel === '10' 
+    ? 32 // KB, smaller for RAID 10
+    : 0; // No striping for RAID 1
 
-/**
- * RAID 0 - Striping (no redundancy)
- */
-function calculateRaid0(diskCount: number, diskSize: number, totalCapacity: number): RaidResults {
   return {
-    usableCapacity: totalCapacity,
-    totalCapacity,
-    efficiency: 100,
-    faultTolerance: 0,
-    parityOverhead: 0,
-    stripeSize: diskCount,
-    description: 'RAID 0 provides maximum performance and capacity but no fault tolerance. Any disk failure results in total data loss.',
-    warnings: []
+    description,
+    usableCapacity: Math.round(usableCapacity * 1000) / 1000, // Round to 3 decimal places
+    totalCapacity: Math.round(totalRawCapacity * 1000) / 1000,
+    efficiency: Math.round(efficiency * 10000) / 10000, // Round to 4 decimal places
+    faultTolerance,
+    parityOverhead: Math.round(parityOverhead * 1000) / 1000,
+    stripeSize,
+    warnings
   };
 }
 
-/**
- * RAID 1 - Mirroring
- */
-function calculateRaid1(diskCount: number, diskSize: number, totalCapacity: number): RaidResults {
-  if (diskCount % 2 !== 0) {
-    throw new Error('RAID 1 requires an even number of disks');
-  }
-
-  const usableCapacity = totalCapacity / 2;
-  
-  return {
-    usableCapacity,
-    totalCapacity,
-    efficiency: 50,
-    faultTolerance: diskCount / 2,
-    parityOverhead: usableCapacity,
-    stripeSize: 1,
-    description: 'RAID 1 mirrors data across disk pairs, providing excellent fault tolerance at 50% capacity efficiency.',
-    warnings: []
-  };
-}
-
-/**
- * RAID 5 - Striping with distributed parity
- */
-function calculateRaid5(diskCount: number, diskSize: number, totalCapacity: number): RaidResults {
-  const usableCapacity = (diskCount - 1) * diskSize;
-  const efficiency = ((diskCount - 1) / diskCount) * 100;
-  
-  return {
-    usableCapacity,
-    totalCapacity,
-    efficiency: Math.round(efficiency * 100) / 100,
-    faultTolerance: 1,
-    parityOverhead: diskSize,
-    stripeSize: diskCount - 1,
-    description: 'RAID 5 distributes parity across all disks, tolerating one disk failure with good capacity efficiency.',
-    warnings: []
-  };
-}
-
-/**
- * RAID 6 - Striping with dual distributed parity
- */
-function calculateRaid6(diskCount: number, diskSize: number, totalCapacity: number): RaidResults {
-  const usableCapacity = (diskCount - 2) * diskSize;
-  const efficiency = ((diskCount - 2) / diskCount) * 100;
-  
-  return {
-    usableCapacity,
-    totalCapacity,
-    efficiency: Math.round(efficiency * 100) / 100,
-    faultTolerance: 2,
-    parityOverhead: diskSize * 2,
-    stripeSize: diskCount - 2,
-    description: 'RAID 6 uses dual parity for enhanced fault tolerance, surviving two simultaneous disk failures.',
-    warnings: []
-  };
-}
-
-/**
- * RAID 10 - Mirrored stripes
- */
-function calculateRaid10(diskCount: number, diskSize: number, totalCapacity: number): RaidResults {
-  if (diskCount % 2 !== 0) {
-    throw new Error('RAID 10 requires an even number of disks');
-  }
-  
-  if (diskCount < 4) {
-    throw new Error('RAID 10 requires at least 4 disks');
-  }
-
-  const usableCapacity = totalCapacity / 2;
-  const maxFailures = Math.floor(diskCount / 2);
-  
-  return {
-    usableCapacity,
-    totalCapacity,
-    efficiency: 50,
-    faultTolerance: maxFailures,
-    parityOverhead: usableCapacity,
-    stripeSize: diskCount / 2,
-    description: 'RAID 10 combines mirroring and striping for high performance and fault tolerance.',
-    warnings: []
-  };
-}
-
-/**
- * Validate minimum disk requirements for each RAID level
- */
-function validateMinimumDisks(raidLevel: RaidLevel, diskCount: number): void {
-  const minimums: Record<RaidLevel, number> = {
-    '0': 2,
-    '1': 2,
-    '5': 3,
-    '6': 4,
-    '10': 4
-  };
-
-  const required = minimums[raidLevel];
-  if (diskCount < required) {
-    throw new Error(`RAID ${raidLevel} requires at least ${required} disks, got ${diskCount}`);
-  }
-
-  // Additional validations
-  if (raidLevel === '1' && diskCount % 2 !== 0) {
-    throw new Error('RAID 1 requires an even number of disks');
-  }
-
-  if (raidLevel === '10' && diskCount % 2 !== 0) {
-    throw new Error('RAID 10 requires an even number of disks');
-  }
-}
-
-/**
- * Get RAID level recommendations based on use case
- */
-export function getRaidRecommendations(diskCount: number, priority: 'performance' | 'capacity' | 'reliability'): RaidLevel[] {
+// Helper function to get RAID level recommendations
+export function getRaidRecommendations(diskCount: number, primaryUse: 'performance' | 'capacity' | 'protection'): RaidLevel[] {
   const recommendations: RaidLevel[] = [];
 
-  switch (priority) {
-    case 'performance':
-      if (diskCount >= 2) recommendations.push('0');
-      if (diskCount >= 4 && diskCount % 2 === 0) recommendations.push('10');
-      if (diskCount >= 3) recommendations.push('5');
-      break;
-      
-    case 'capacity':
-      if (diskCount >= 3) recommendations.push('5');
-      if (diskCount >= 4) recommendations.push('6');
-      if (diskCount >= 2) recommendations.push('0');
-      break;
-      
-    case 'reliability':
-      if (diskCount >= 4) recommendations.push('6');
-      if (diskCount >= 4 && diskCount % 2 === 0) recommendations.push('10');
-      if (diskCount >= 2 && diskCount % 2 === 0) recommendations.push('1');
-      if (diskCount >= 3) recommendations.push('5');
-      break;
+  if (diskCount >= 2) {
+    if (primaryUse === 'performance') {
+      recommendations.push('0');
+      if (diskCount >= 4 && diskCount % 2 === 0) {
+        recommendations.push('10');
+      }
+    }
+    
+    if (primaryUse === 'protection') {
+      recommendations.push('1');
+      if (diskCount >= 4) {
+        recommendations.push('6');
+      }
+    }
+    
+    if (primaryUse === 'capacity') {
+      if (diskCount >= 3) {
+        recommendations.push('5');
+      }
+      if (diskCount >= 4) {
+        recommendations.push('6');
+      }
+    }
   }
 
   return recommendations;
 }
 
+// Helper function to validate RAID configuration
+export function validateRaidConfig(config: RaidConfiguration): { isValid: boolean; errors: string[] } {
+  const errors: string[] = [];
+  const { raidLevel, disks, uniformSize, diskCount } = config;
+
+  let actualDiskCount = disks.length;
+  if (actualDiskCount === 0 && diskCount) {
+    actualDiskCount = diskCount;
+  }
+
+  if (actualDiskCount === 0) {
+    errors.push('No disks configured');
+    return { isValid: false, errors };
+  }
+
+  switch (raidLevel) {
+    case '0':
+      if (actualDiskCount < 2) {
+        errors.push('RAID 0 requires at least 2 disks');
+      }
+      break;
+    case '1':
+      if (actualDiskCount < 2) {
+        errors.push('RAID 1 requires at least 2 disks');
+      }
+      break;
+    case '5':
+      if (actualDiskCount < 3) {
+        errors.push('RAID 5 requires at least 3 disks');
+      }
+      break;
+    case '6':
+      if (actualDiskCount < 4) {
+        errors.push('RAID 6 requires at least 4 disks');
+      }
+      break;
+    case '10':
+      if (actualDiskCount < 4) {
+        errors.push('RAID 10 requires at least 4 disks');
+      }
+      if (actualDiskCount % 2 !== 0) {
+        errors.push('RAID 10 requires an even number of disks');
+      }
+      break;
+    default:
+      errors.push(`Unsupported RAID level: ${raidLevel}`);
+  }
+
+  return { isValid: errors.length === 0, errors };
+}
