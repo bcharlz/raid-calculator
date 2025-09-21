@@ -33,14 +33,14 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL('https://raid-calc.com'),
+  metadataBase: new URL('https://raidcalculator.com'),
   alternates: {
     canonical: '/',
   },
   openGraph: {
     title: 'RAID Calculator | Synology, QNAP, ZFS — Capacity & IOPS',
     description: 'Instant RAID 0/1/5/6/10 capacity, efficiency, and IOPS. Synology, QNAP, ZFS profiles. Generate shareable links and an embeddable widget.',
-    url: 'https://raid-calc.com',
+    url: 'https://raidcalculator.com',
     siteName: 'RAID Calculator',
     locale: 'en_US',
     type: 'website',
@@ -72,7 +72,7 @@ export const metadata: Metadata = {
     },
   },
   verification: {
-    google: 'OQlgWCRCTb0bU6dEoipo_NNjm7yvaYH7_MFnMbn8qOY',
+    google: 'your-google-verification-code',
   },
 };
 
@@ -84,7 +84,6 @@ export default function RootLayout({
   return (
     <html lang="en" className={inter.variable}>
       <head>
- <meta name="google-adsense-account" content="ca-pub-2455131049414775"/>
         {/* Preload critical fonts */}
         <link
           rel="preload"
@@ -106,7 +105,7 @@ export default function RootLayout({
         {/* Google AdSense */}
         <script
           async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2455131049414775"
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1234567890123456"
           crossOrigin="anonymous"
         />
         
@@ -119,7 +118,7 @@ export default function RootLayout({
               '@type': 'WebApplication',
               name: 'RAID Calculator',
               description: 'Free RAID capacity and performance calculator for storage arrays',
-              url: 'https://raid-calc.com',
+              url: 'https://raidcalculator.com',
               applicationCategory: 'UtilityApplication',
               operatingSystem: 'Web Browser',
               offers: {

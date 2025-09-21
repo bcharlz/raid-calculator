@@ -69,3 +69,11 @@ export function isUniformConfiguration(
 ): cfg is UniformConfiguration {
   return (cfg as UniformConfiguration).diskCount !== undefined;
 }
+
+// Re-export from models for backward compatibility
+export type { 
+  CalculationResults,
+  RaidConfiguration,
+  RaidResults,
+  DiskConfiguration
+} from '@/models/raid-schemas';

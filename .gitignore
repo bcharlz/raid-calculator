@@ -17,3 +17,8 @@ out/
 
 # Backups from earlier
 src/_backup/
+
+# Backup files
+*.backup
+*-backup.*
+.backups/

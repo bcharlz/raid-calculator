@@ -26,7 +26,7 @@ import {
 // Import types
 import type { 
   CalculationResults
-} from '@/features/raid/types';
+} from '@/models/raid-schemas';
 
 export default function HomePage() {
   // Form state
@@ -132,7 +132,13 @@ export default function HomePage() {
 
       setResults({
         raid: raidResults,
-        iops: iopsResults,
+        performance: {
+          randomRead: iopsResults.randomReadIops,
+          randomWrite: iopsResults.randomWriteIops,
+          sequentialRead: iopsResults.sequentialReadMBps,
+          sequentialWrite: iopsResults.sequentialWriteMBps,
+          notes: []
+        },
       });
       
       setShowResults(true);
@@ -185,7 +191,13 @@ export default function HomePage() {
 
         setResults({
           raid: raidResults,
-          iops: iopsResults,
+          performance: {
+          randomRead: iopsResults.randomReadIops,
+          randomWrite: iopsResults.randomWriteIops,
+          sequentialRead: iopsResults.sequentialReadMBps,
+          sequentialWrite: iopsResults.sequentialWriteMBps,
+          notes: []
+        },
         });
         
         setShowResults(true);
@@ -238,13 +250,25 @@ export default function HomePage() {
   }, []);
 
   // Convert IOPS for display
-  const convertIopsForDisplay = (iops: any) => ({
-    randomRead: iops.randomReadIops,
-    randomWrite: iops.randomWriteIops,
-    sequentialRead: iops.sequentialReadMBps,
-    sequentialWrite: iops.sequentialWriteMBps,
-    notes: []
-  });
+  // Convert IOPS for display with null safety
+  const convertIopsForDisplay = (iops: any) => {
+    if (!iops) {
+      return {
+        randomRead: 0,
+        randomWrite: 0,
+        sequentialRead: 0,
+        sequentialWrite: 0,
+        notes: []
+      };
+    }
+    return {
+      randomRead: iops.randomReadIops || 0,
+      randomWrite: iops.randomWriteIops || 0,
+      sequentialRead: iops.sequentialReadMBps || 0,
+      sequentialWrite: iops.sequentialWriteMBps || 0,
+      notes: []
+    };
+  };
 
   return (
     <div className="min-h-screen">

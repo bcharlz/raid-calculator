@@ -1,0 +1,19 @@
+  // Convert IOPS for display with null safety
+  const convertIopsForDisplay = (iops: any) => {
+    if (!iops) {
+      return {
+        randomRead: 0,
+        randomWrite: 0,
+        sequentialRead: 0,
+        sequentialWrite: 0,
+        notes: []
+      };
+    }
+    return {
+      randomRead: iops.randomReadIops || 0,
+      randomWrite: iops.randomWriteIops || 0,
+      sequentialRead: iops.sequentialReadMBps || 0,
+      sequentialWrite: iops.sequentialWriteMBps || 0,
+      notes: []
+    };
+  };
